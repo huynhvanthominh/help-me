@@ -45,6 +45,7 @@ export default function DatabasePage() {
   const mapTypeJS = (type: string, subType?: string): string => {
     const _type = mapTypeOrm(type, subType);
     if (_type == "timestamptz") return "Date"
+    else if (_type === "numeric") return "number"
     else return "string"
   }
 
