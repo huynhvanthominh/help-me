@@ -96,12 +96,13 @@ export default function DatabasePage() {
       if (item.Length) {
         rs += `\t\tlength: ${item.Length},\n`
       }
-      if (!item["Not null"]) {
-        rs += `\t\tnullable: ${!item["Not null"]},\n`
+      const notNull = item["Not null"]
+      if (!notNull) {
+        rs += `\t\tnullable: ${!notNull},\n`
       }
       rs += `\t\tname: ${nameConst}.column.${_name},\n`
       rs += `\t})\n`
-      rs += `\t${_name}: ${mapTypeJS(item.Type, item.Subtype)};\n\n`
+      rs += `\t${_name}${notNull ? ":" : "?:"} ${mapTypeJS(item.Type, item.Subtype)};\n\n`
     })
     rs += "};\n"
     setOutput2(rs)
