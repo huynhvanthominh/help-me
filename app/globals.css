@@ -7,10 +7,25 @@
   --foreground: #171717;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+input,
+textarea {
+  padding: 0.25rem;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+  }
+
+  input,
+  textarea {
+    color: black;
+    padding: 0.25rem;
   }
 }
 
