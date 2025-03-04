@@ -13,6 +13,10 @@ export default function Home() {
         <li>
           <Link href={"/database"}>- Database</Link>
         </li>
+        <li>
+          <Link href={"/log-work"}>- Log work (Jira)</Link>
+        </li>
+
       </ul>
     </div>
   );
