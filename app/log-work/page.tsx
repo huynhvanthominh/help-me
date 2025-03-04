@@ -84,14 +84,19 @@ export default function LogWorkPage() {
   }
 
   const handleSubmit = async () => {
-    const url = "http://localhost:3000/jira/log-work";
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    })
+    try {
+      const url = "http://localhost:3000/jira/log-work";
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      alert("Log work successfully!")
+    } catch (error) {
+      alert("Log work failed!")
+    }
   }
 
   return (
