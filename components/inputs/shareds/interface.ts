@@ -1,4 +1,4 @@
-import { ChangeEventHandler, FocusEventHandler, HTMLInputTypeAttribute } from "react";
+import { ChangeEventHandler, FocusEventHandler } from "react";
 
 export interface IInputCommonProps {
   label?: string;
