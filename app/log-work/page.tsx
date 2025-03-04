@@ -95,7 +95,7 @@ export default function LogWorkPage() {
       })
       alert("Log work successfully!")
     } catch (error) {
-      alert("Log work failed!")
+      alert("Log work failed! Error: " + JSON.stringify(error))
     }
   }
 
