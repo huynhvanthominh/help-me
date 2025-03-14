@@ -11,7 +11,7 @@ interface IInputProps extends IInputCommonProps {
 export function Input(props: IInputProps) {
   const { label, type, ...rest } = props
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col w-full">
       {label && <label>{label}</label>}
       <input type={type ?? "text"} {...rest} />
     </div>

@@ -11,12 +11,15 @@ interface IRow {
   "Type": string,
   "Subtype": string,
   "Unique": boolean,
+  "Default": string,
   nameInCode: string
 }
 export default function DatabasePage() {
   const [output1, setOutput1] = useState("");
   const [output2, setOutput2] = useState("");
   const [output3, setOutput3] = useState("");
+  const [output4, setOutput4] = useState("");
+  const [output5, setOutput5] = useState("");
 
   const onChange = (file: File | undefined) => {
     if (!file) return
@@ -38,7 +41,7 @@ export default function DatabasePage() {
 
   const mapTypeOrm = (type: string, subType?: string): string => {
     if (type === "json") return "jsonb"
-    if (type == "timestamp") return "timestamptz"
+    if (type == "timestamp" || type === "datetime") return "timestamptz"
     return subType ?? type
   }
 
@@ -46,24 +49,51 @@ export default function DatabasePage() {
     const _type = mapTypeOrm(type, subType);
     if (_type == "timestamptz") return "Date"
     else if (_type === "numeric") return "number"
+    else if (_type === 'boolean') return 'boolean'
     else return "string"
   }
 
-  const mapData = (json: IRow[]): IRow[] => {
-    return json.filter(item => !["create_user_id", "create_program_id", "create_date", "update_user_id", "update_program_id", "update_date", "edw_update_date"].includes(item["Technical name"])).map(item => {
-      const nameInCode = item["Technical name"].split("_").map((char, index) => {
-        if (index === 0) return char;
-        return char.charAt(0).toUpperCase() + char.slice(1)
-      }).join("")
-      return {
-        ...item,
-        nameInCode
-      }
-    }) as any
+  const mapData = (json: IRow[]): {
+    data: IRow[],
+    full: IRow[]
+  } => {
+    return {
+      data: json.filter(item => !["create_user_id", "create_program_id", "create_date", "update_user_id", "update_program_id", "update_date", "edw_update_date"].includes(item["Technical name"])).map(item => {
+        const nameInCode = item["Technical name"].split("_").map((char, index) => {
+          if (index === 0) return char;
+          return char.charAt(0).toUpperCase() + char.slice(1)
+        }).join("")
+        return {
+          ...item,
+          nameInCode
+        }
+      }) as any,
+      full: json.map(item => {
+        const nameInCode = item["Technical name"].split("_").map((char, index) => {
+          if (index === 0) return char;
+          return char.charAt(0).toUpperCase() + char.slice(1)
+        }).join("")
+        return {
+          ...item,
+          nameInCode
+        }
+      }) as any
+
+    }
+  }
+
+  const getNameClass = (name: string) => {
+    return name.split("_").slice(1).map(item => item.charAt(0).toUpperCase() + item.slice(1)).join("")
   }
 
   const handleOutput1 = (nameConst: string, name: string, data: IRow[]) => {
-    let rs1 = `export const ${nameConst}= {\n\tname: "${name}",\n\tcolumn: {\n`;
+    let rs1 = `export interface I${getNameClass(name)}Entity extends IBaseEntity {\n`
+    data.forEach(item => {
+      const notNull = item["Not null"]
+      rs1 += `\t\t${item.nameInCode}${notNull ? ":" : "?:"} ${mapTypeJS(item.Type, item.Subtype)},\n`
+    })
+    rs1 += '}\n'
+    rs1 += `export const ${nameConst}= {\n\tname: "${name}",\n\tcolumn: {\n`;
     data.forEach(item => {
       const _name = item["Technical name"]
       rs1 += `\t\t${item.nameInCode}: "${_name}",\n`
@@ -78,8 +108,8 @@ export default function DatabasePage() {
     if (uniques.length > 0) {
       rs += `@Unique([${uniques.map(item => `"${item.nameInCode}"`).join(",")}])`
     }
-    const nameClass = name.split("_").slice(1).map(item => item.charAt(0).toUpperCase() + item.slice(1)).join("")
-    rs += `\nexport class ${nameClass}Entity{\n`;
+    const nameClass = getNameClass(name);
+    rs += `\nexport class ${nameClass}Entity extends BaseEntity implements I${nameClass}Entity{\n`;
     data.forEach(item => {
       const _name = item.nameInCode
       const p = item["Primary key"];
@@ -93,7 +123,7 @@ export default function DatabasePage() {
       if (_type === "uuid") {
         rs += `\t\tgenerated: 'uuid',\n`
       }
-      if (item.Length) {
+      if (item.Length && !['numeric', 'boolean'].includes(_type)) {
         rs += `\t\tlength: ${item.Length},\n`
       }
       const notNull = item["Not null"]
@@ -127,7 +157,7 @@ export default function DatabasePage() {
       if (!item["Not null"]) {
         rs += `\t\t\tnullAble: ${!item["Not null"]},\n`
       }
-      if (item.Length) {
+      if (item.Length && !['numeric', 'boolean'].includes(_type)) {
         rs += `\t\t\tlength: ${item.Length},\n`
       }
       rs += `\t\t},\n`
@@ -137,7 +167,49 @@ export default function DatabasePage() {
     setOutput3(rs)
   }
 
-  const handleValue = (data: IRow[]) => {
+  const _renderType = ({ Type, Subtype, Length, ...item }: IRow) => {
+    const _type = (Subtype ?? Type).toUpperCase();
+
+    let _data = `${_type}(${Length})`;
+    if (_type === 'timestamp'.toUpperCase()) {
+      _data = 'timestamptz'.toUpperCase()
+    } else if (_type === 'BOOLEAN') {
+      _data = `BOOLEAN`
+    } else if (_type === 'NUMERIC') {
+      _data = 'NUMERIC'
+    }
+
+    if (item["Not null"]) {
+      _data += ' NOT NULL'
+    }
+    if (item.Default !== undefined) {
+      _data += ` DEFAULT ${item.Default.toString().toUpperCase()}`
+    }
+    return _data
+  }
+  const handleOutput4 = (name: string, data: IRow[]) => {
+    let _query = `CREATE TABLE "${name}" (\n`;
+    data.forEach((item: IRow, index: number) => {
+      _query += `\t${item["Technical name"]} ${_renderType(item)}`
+      if (index < data.length - 1) {
+        _query += ",\n"
+      } else {
+        _query += '\n'
+      }
+    })
+    _query += ")"
+    setOutput4(_query)
+  }
+
+  const handleOutput5 = (name: string, data: IRow[]) => {
+    const _query = `DROP TABLE IF EXISTS "${name}"`
+    setOutput5(_query)
+  }
+
+  const handleValue = ({ data, full }: {
+    data: IRow[],
+    full: IRow[]
+  }) => {
     if (data.length === 0) return;
     const first = data[0];
     const name = first["Entity name"].toLowerCase().split(" ").join("_");
@@ -148,12 +220,13 @@ export default function DatabasePage() {
     handleOutput1(nameConst, name, data)
     handleOutput2(nameConst, name, data)
     handleOutput3(nameConst, data)
+    handleOutput4(name, full);
+    handleOutput5(name, full);
   }
 
   const onCopy = async (num: number) => {
     const val = num === 1 ? output1 : num === 2 ? output2 : output3
     await navigator.clipboard.writeText(val)
-    alert("Copied!")
   }
   return (
     <div className="">
@@ -174,6 +247,19 @@ export default function DatabasePage() {
         <button onClick={() => onCopy(3)} className="cursor-pointer">Copy</button>
       </div>
       <textarea rows={30} value={output3} readOnly className="w-full" />
+
+      <div className="flex justify-between">
+        <div>Output 4</div>
+        <button onClick={() => onCopy(4)} className="cursor-pointer">Copy</button>
+      </div>
+      <textarea rows={30} value={output4} readOnly className="w-full" />
+
+      <div className="flex justify-between">
+        <div>Output 5</div>
+        <button onClick={() => onCopy(5)} className="cursor-pointer">Copy</button>
+      </div>
+      <textarea rows={30} value={output5} readOnly className="w-full" />
+
     </div>
   )
 }

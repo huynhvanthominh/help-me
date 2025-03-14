@@ -16,7 +16,9 @@ export default function Home() {
         <li>
           <Link href={"/log-work"}>- Log work (Jira)</Link>
         </li>
-
+        <li>
+          <Link href={"/seed-data"}>- Seed data (PostgreSql)</Link>
+        </li>
       </ul>
     </div>
   );

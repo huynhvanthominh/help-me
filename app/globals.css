@@ -12,8 +12,14 @@
 }
 
 input,
+select,
 textarea {
   padding: 0.25rem;
+}
+
+button {
+  padding: 0.25rem;
+  border-radius: 0.25rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,9 +29,15 @@ textarea {
   }
 
   input,
+  select,
   textarea {
     color: black;
     padding: 0.25rem;
+  }
+
+  button {
+    background: white;
+    color: black;
   }
 }
 
