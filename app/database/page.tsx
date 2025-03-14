@@ -201,7 +201,7 @@ export default function DatabasePage() {
     setOutput4(_query)
   }
 
-  const handleOutput5 = (name: string, data: IRow[]) => {
+  const handleOutput5 = (name: string) => {
     const _query = `DROP TABLE IF EXISTS "${name}"`
     setOutput5(_query)
   }
@@ -221,7 +221,7 @@ export default function DatabasePage() {
     handleOutput2(nameConst, name, data)
     handleOutput3(nameConst, data)
     handleOutput4(name, full);
-    handleOutput5(name, full);
+    handleOutput5(name);
   }
 
   const onCopy = async (num: number) => {
