@@ -107,7 +107,7 @@ export default function LogWorkPage() {
         data.dates.map((item, index) => {
           const _label = `Date ${index + 1}`
           return (
-            <div className="flex gap-2" key={`${JSON.stringify(item)}-${index}`}>
+            <div className="flex gap-2" key={`$${item.date?.toString()}-${index}`}>
               <DatePicker
                 label={_label}
                 value={item.date}
