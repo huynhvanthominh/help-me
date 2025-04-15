@@ -232,34 +232,43 @@ export default function DatabasePage() {
     <div className="">
       <div>Input</div>
       <input type="file" accept="*" onChange={e => onChange(e.target.files?.[0])} />
-      <div className="flex justify-between">
-        <div>Output 1</div>
-        <button onClick={() => onCopy(1)} className="cursor-pointer">Copy</button>
-      </div>
-      <textarea rows={10} value={output1} readOnly className="w-full" />
-      <div className="flex justify-between">
-        <div>Output 2</div>
-        <button onClick={() => onCopy(2)} className="cursor-pointer">Copy</button>
-      </div>
-      <textarea rows={30} value={output2} readOnly className="w-full" />
-      <div className="flex justify-between">
-        <div>Output 3</div>
-        <button onClick={() => onCopy(3)} className="cursor-pointer">Copy</button>
-      </div>
-      <textarea rows={30} value={output3} readOnly className="w-full" />
+      <div className="flex gap-1">
+        <div className="w-1/2">
+          <div className="flex justify-between">
+            <div>Interface + Define Constant Entity</div>
+            <button onClick={() => onCopy(1)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={10} value={output1} readOnly className="w-full" />
 
-      <div className="flex justify-between">
-        <div>Output 4</div>
-        <button onClick={() => onCopy(4)} className="cursor-pointer">Copy</button>
-      </div>
-      <textarea rows={30} value={output4} readOnly className="w-full" />
+          <div className="flex justify-between">
+            <div>Entity</div>
+            <button onClick={() => onCopy(2)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={30} value={output2} readOnly className="w-full" />
 
-      <div className="flex justify-between">
-        <div>Output 5</div>
-        <button onClick={() => onCopy(5)} className="cursor-pointer">Copy</button>
-      </div>
-      <textarea rows={30} value={output5} readOnly className="w-full" />
+        </div>
+        <div className="w-1/2">
+          <div className="flex justify-between">
+            <div>Migration 1</div>
+            <button onClick={() => onCopy(3)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={30} value={output3} readOnly className="w-full" />
 
+          <div className="flex justify-between">
+            <div>Migration 2</div>
+            <button onClick={() => onCopy(4)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={30} value={output4} readOnly className="w-full" />
+
+          <div className="flex justify-between">
+            <div>Migration 3</div>
+            <button onClick={() => onCopy(5)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={30} value={output5} readOnly className="w-full" />
+        </div>
+      </div>
+      <div className="">
+      </div>
     </div>
   )
 }
