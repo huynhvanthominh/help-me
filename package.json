@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@eric-huynh/ui-library": "^0.0.1",
     "dayjs": "^1.11.13",
     "next": "15.1.3",
     "react": "^19.0.0",

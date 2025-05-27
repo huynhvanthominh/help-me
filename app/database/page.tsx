@@ -1,17 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { useState } from "react"
 import * as XLSX from 'xlsx'
+import { mapTypeProto } from "./ultils";
+import { TYPE_DATABASE_ENUM } from "./enums/type.enum";
 interface IRow {
   "Entity name": string,
   "Technical name": string,
   "Length": number,
   "Not null": boolean,
   "Primary key": boolean,
-  "Type": string,
+  "Type": TYPE_DATABASE_ENUM,
   "Subtype": string,
   "Unique": boolean,
   "Default": string,
+  "Business Name": string,
   nameInCode: string
 }
 export default function DatabasePage() {
@@ -20,17 +22,19 @@ export default function DatabasePage() {
   const [output3, setOutput3] = useState("");
   const [output4, setOutput4] = useState("");
   const [output5, setOutput5] = useState("");
-
+  const [output6, setOutput6] = useState("");
+  const [sheetNumber, setSheetNumber] = useState(0);
+  const [file, setFile] = useState<File | undefined>();
   const onChange = (file: File | undefined) => {
     if (!file) return
-
+    setFile(file)
     const reader = new FileReader();
 
     reader.onload = function(e) {
       const data = new Uint8Array((e as any).target.result);
       const workbook = XLSX.read(data, { type: 'array' });
 
-      const sheetName = workbook.SheetNames[0];
+      const sheetName = workbook.SheetNames[sheetNumber];
       const sheet = workbook.Sheets[sheetName];
 
       const jsonData = XLSX.utils.sheet_to_json(sheet);
@@ -206,6 +210,29 @@ export default function DatabasePage() {
     setOutput5(_query)
   }
 
+  const handleOutput6 = (name: string, full: IRow[]) => {
+    let rs = 'syntax = "proto3";\n\n';
+    rs += `package chorus.trm.agreement.${name}.v1;\n\n`
+    const _name = full[0]?.["Entity name"];
+    if (_name) {
+      rs += `// The ${_name} information\n`
+    }
+    rs += `message ${getNameClass(name)} {\n`
+    full.forEach((item, index) => {
+      rs += `\t// The ${item["Technical name"]} is ${item["Business Name"]}\n`
+      rs += '\t'
+      if (!item["Not null"]) {
+        rs += `optional `;
+      }
+      rs += `${mapTypeProto(item.Type)} ${item["Technical name"]} = ${index + 1};\n`
+    });
+    rs += '\t// The row_id is row id\n'
+    rs += `\toptional string row_id = ${full.length + 1};\n`
+    rs += '}\n'
+
+    setOutput6(rs);
+  }
+
   const handleValue = ({ data, full }: {
     data: IRow[],
     full: IRow[]
@@ -222,6 +249,7 @@ export default function DatabasePage() {
     handleOutput3(nameConst, data)
     handleOutput4(name, full);
     handleOutput5(name);
+    handleOutput6(name, full);
   }
 
   const onCopy = async (num: number) => {
@@ -232,6 +260,8 @@ export default function DatabasePage() {
     <div className="">
       <div>Input</div>
       <input type="file" accept="*" onChange={e => onChange(e.target.files?.[0])} />
+      <input type="number" value={sheetNumber} onChange={e => setSheetNumber(Number(e.target.value))} />
+      <button onClick={() => onChange(file)} className="cursor-pointer">Reset</button>
       <div className="flex gap-1">
         <div className="w-1/2">
           <div className="flex justify-between">
@@ -245,6 +275,13 @@ export default function DatabasePage() {
             <button onClick={() => onCopy(2)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={30} value={output2} readOnly className="w-full" />
+
+          <div className="flex justify-between">
+            <div>Proto</div>
+            <button onClick={() => onCopy(6)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={30} value={output6} readOnly className="w-full" />
+
 
         </div>
         <div className="w-1/2">

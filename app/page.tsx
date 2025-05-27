@@ -19,6 +19,10 @@ export default function Home() {
         <li>
           <Link href={"/seed-data"}>- Seed data (PostgreSql)</Link>
         </li>
+        <li>
+          <Link href={"/format-query"}>- Format query</Link>
+        </li>
+
       </ul>
     </div>
   );

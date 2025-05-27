@@ -14,6 +14,11 @@
   dependencies:
     tslib "^2.4.0"
 
+"@eric-huynh/ui-library@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@eric-huynh/ui-library/-/ui-library-0.0.1.tgz#f71f24e42852437242dde2837c2e9a39697eef6e"
+  integrity sha512-PIAZQ/SmX2Z/cVT+gGnw+WsyiWhf7/hlZR5Or+3Sj+rKA1WTdwxrPb92BuOu5GCTRgE5/EmXqPrpMQMD0CF0rA==
+
 "@eslint-community/eslint-utils@^4.2.0", "@eslint-community/eslint-utils@^4.4.0":
   version "4.4.1"
   resolved "https://registry.yarnpkg.com/@eslint-community/eslint-utils/-/eslint-utils-4.4.1.tgz#d1145bf2c20132d6400495d6df4bf59362fd9d56"
