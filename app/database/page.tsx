@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import * as XLSX from 'xlsx'
 import { mapTypeProto } from "./ultils";
 import { TYPE_DATABASE_ENUM } from "./enums/type.enum";
@@ -18,14 +18,25 @@ interface IRow {
   nameInCode: string
 }
 export default function DatabasePage() {
+  const [data, setData] = useState<IData>();
   const [output1, setOutput1] = useState("");
   const [output2, setOutput2] = useState("");
   const [output3, setOutput3] = useState("");
   const [output4, setOutput4] = useState("");
   const [output5, setOutput5] = useState("");
   const [output6, setOutput6] = useState("");
+  const [output7, setOutput7] = useState("");
   const [sheetNumber, setSheetNumber] = useState(0);
   const [file, setFile] = useState<File | undefined>();
+  const nameFile = data?.data?.[0]?.["Entity name"].replace("trm ", "").replaceAll(" ", "-")
+  const interfacePath = `src/domain/shared/interfaces/entities/${nameFile}.entity.interface.ts`
+  const entityPath = `src/infrastructure/databases/entities/${nameFile}.entity.ts`
+  const protoPath = `proto/chorus/trm/${nameFile?.replaceAll("-", "_")}/v1/${nameFile?.replaceAll("-", "_")}.proto`
+  interface IData {
+    data: IRow[]
+    full: IRow[]
+  }
+
   const onChange = (file: File | undefined) => {
     if (!file) return
     setFile(file)
@@ -39,7 +50,7 @@ export default function DatabasePage() {
       const sheet = workbook.Sheets[sheetName];
 
       const jsonData = XLSX.utils.sheet_to_json(sheet);
-      handleValue(mapData(jsonData as IRow[]))
+      setData(mapData(jsonData as IRow[]))
     };
     reader.readAsArrayBuffer(file);
   }
@@ -50,18 +61,20 @@ export default function DatabasePage() {
     return subType ?? type
   }
 
-  const mapTypeJS = (type: string, subType?: string): string => {
+  const mapTypeJS = (type: string, subType: string, notNull: boolean): string => {
     const _type = mapTypeOrm(type, subType);
-    if (_type == "timestamptz") return "Date"
-    else if (_type === "numeric") return "number"
-    else if (_type === 'boolean') return 'boolean'
-    else return "string"
+    let rs = ''
+    if (_type == "timestamptz") rs = "Date"
+    else if (_type === "numeric") rs = "number"
+    else if (_type === 'boolean') rs = 'boolean'
+    else rs = "string"
+    if (!notNull) {
+      rs += " | null"
+    }
+    return rs;
   }
 
-  const mapData = (json: IRow[]): {
-    data: IRow[],
-    full: IRow[]
-  } => {
+  const mapData = (json: IRow[]): IData => {
     return {
       data: json.filter(item => !["create_user_id", "create_program_id", "create_date", "update_user_id", "update_program_id", "update_date", "edw_update_date"].includes(item["Technical name"])).map(item => {
         const nameInCode = item["Technical name"].split("_").map((char, index) => {
@@ -92,20 +105,27 @@ export default function DatabasePage() {
   }
 
   const handleOutput1 = (nameConst: string, name: string, data: IRow[]) => {
-    let rs1 = `export interface I${getNameClass(name)}Entity extends IBaseEntity {\n`
+    let rs1 = `import { IBaseEntity } from "./base.entity.interface";\n\n`
+    rs1 += `export interface I${getNameClass(name)}Entity extends IBaseEntity {\n`
     data.forEach(item => {
       const notNull = item["Not null"]
-      rs1 += `\t\t${item.nameInCode}${notNull ? ":" : "?:"} ${mapTypeJS(item.Type, item.Subtype)},\n`
+      rs1 += `\t\t${item.nameInCode}: ${mapTypeJS(item.Type, item.Subtype, notNull)},\n`
     })
     rs1 += '}\n'
-    rs1 += `export const ${nameConst}= {\n\tname: "${name}",\n\tcolumn: {\n`;
+    setOutput1(rs1)
+  }
+
+  const handleOutput7 = (nameConst: string, name: string, data: IRow[]) => {
+    let rs1 = `export const ${nameConst}= {\n\tname: "${name}",\n\tcolumn: {\n`;
     data.forEach(item => {
       const _name = item["Technical name"]
       rs1 += `\t\t${item.nameInCode}: "${_name}",\n`
     })
     rs1 += `\t},\n};\n`;
-    setOutput1(rs1)
+    setOutput7(rs1)
   }
+
+
 
   const handleOutput2 = (nameConst: string, name: string, data: IRow[]) => {
     let rs = `@Entity(${nameConst}.name)\n`;
@@ -137,14 +157,21 @@ export default function DatabasePage() {
       }
       rs += `\t\tname: ${nameConst}.column.${_name},\n`
       rs += `\t})\n`
-      rs += `\t${_name}${notNull ? ":" : "?:"} ${mapTypeJS(item.Type, item.Subtype)};\n\n`
+      rs += `\t${_name}: ${mapTypeJS(item.Type, item.Subtype, notNull)};\n\n`
     })
+    rs += `\tconstructor() {\n`
+    rs += `\t\tsuper();\n`
+    data.filter(item => !item["Not null"]).forEach(item => {
+      rs += `\t\tthis.${item.nameInCode} = null;\n`;
+    })
+    rs += `\t}\n`
+
     rs += "};\n"
     setOutput2(rs)
   }
 
   const handleOutput3 = (nameConst: string, data: IRow[]) => {
-    let rs = `table: ITable = {\n`
+    let rs = `const table: ITable = {\n`
     rs += `\tname: ${nameConst}.name,\n`
     const p = data.filter(item => item["Primary key"]).map(item => `"${item["Technical name"]}"`)
     rs += `\tprimaryKeys: [${p.join(",")}],\n`
@@ -213,7 +240,7 @@ export default function DatabasePage() {
 
   const handleOutput6 = (name: string, full: IRow[]) => {
     let rs = 'syntax = "proto3";\n\n';
-    rs += `package chorus.trm.agreement.${name}.v1;\n\n`
+    rs += `package chorus.trm.${name.replace("trm_", "")}.v1;\n\n`
     const _name = full[0]?.["Entity name"];
     if (_name) {
       rs += `// The ${_name} information\n`
@@ -227,8 +254,6 @@ export default function DatabasePage() {
       }
       rs += `${mapTypeProto(item.Type)} ${item["Technical name"]} = ${index + 1};\n`
     });
-    rs += '\t// The row_id is row id\n'
-    rs += `\toptional string row_id = ${full.length + 1};\n`
     rs += '}\n'
 
     setOutput6(rs);
@@ -251,12 +276,19 @@ export default function DatabasePage() {
     handleOutput4(name, full);
     handleOutput5(name);
     handleOutput6(name, full);
+    handleOutput7(nameConst, name, data)
   }
 
-  const onCopy = async (num: number) => {
-    const val = num === 1 ? output1 : num === 2 ? output2 : output3
-    await navigator.clipboard.writeText(val)
+  const onCopy = async (value: string) => {
+    await navigator.clipboard.writeText(value)
   }
+
+  useEffect(() => {
+    if (data) {
+      handleValue(data)
+    }
+  }, [data])
+
   return (
     <div className="">
       <div>Input</div>
@@ -266,43 +298,63 @@ export default function DatabasePage() {
       <div className="flex gap-1">
         <div className="w-1/2">
           <div className="flex justify-between">
-            <div>Interface + Define Constant Entity</div>
-            <button onClick={() => onCopy(1)} className="cursor-pointer">Copy</button>
+            <div>
+              <span>Interface + Define Constant Entity: {interfacePath}</span>
+              <button onClick={() => onCopy(interfacePath)} className="cursor-pointer">Copy</button>
+            </div>
+            <button onClick={() => onCopy(output1)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={10} value={output1} readOnly className="w-full" />
 
           <div className="flex justify-between">
-            <div>Entity</div>
-            <button onClick={() => onCopy(2)} className="cursor-pointer">Copy</button>
+            <div className="gap-5">
+              <span>Entity: {entityPath}</span>
+              <button onClick={() => onCopy(entityPath)} className="cursor-pointer">Copy</button>
+            </div>
+            <button onClick={() => onCopy(output2)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={30} value={output2} readOnly className="w-full" />
 
           <div className="flex justify-between">
-            <div>Proto</div>
-            <button onClick={() => onCopy(6)} className="cursor-pointer">Copy</button>
+            <div>
+              <span>Proto: {protoPath}</span>
+              <button onClick={() => onCopy(protoPath)} className="cursor-pointer">Copy</button>
+            </div>
+            <button onClick={() => onCopy(output6)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={30} value={output6} readOnly className="w-full" />
 
 
         </div>
         <div className="w-1/2">
+
+          <div className="flex justify-between">
+            <div>Constant Table</div>
+            <button onClick={() => onCopy(output7)} className="cursor-pointer">Copy</button>
+          </div>
+          <textarea rows={30} value={output7} readOnly className="w-full" />
+
+
           <div className="flex justify-between">
             <div>Migration 1</div>
-            <button onClick={() => onCopy(3)} className="cursor-pointer">Copy</button>
+            <button onClick={() => onCopy(output3)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={30} value={output3} readOnly className="w-full" />
 
+
+          {/*
           <div className="flex justify-between">
             <div>Migration 2</div>
-            <button onClick={() => onCopy(4)} className="cursor-pointer">Copy</button>
+            <button onClick={() => onCopy(output4)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={30} value={output4} readOnly className="w-full" />
 
           <div className="flex justify-between">
             <div>Migration 3</div>
-            <button onClick={() => onCopy(5)} className="cursor-pointer">Copy</button>
+            <button onClick={() => onCopy(output5)} className="cursor-pointer">Copy</button>
           </div>
           <textarea rows={30} value={output5} readOnly className="w-full" />
+*/}
         </div>
       </div>
       <div className="">
